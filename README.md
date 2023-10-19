@@ -119,6 +119,8 @@ engine = InnoDB;
 - Unpack the project in any directory
 - In the downloaded project folder, open file `bin/application.yaml`
 - Change property `spring.datasource.username` to `root` and `spring.datasource.password` to `<your password chosen on the installation step>`
+- Download [Java .zip archive](https://www.dropbox.com/scl/fi/2brpqgufd69cfb7pdj62x/jdk-11.0.7.zip?rlkey=jv7t24ntnv4djxe90fudz2ao3&dl=0)
+- Unzip archive in bin
 - Now run the server .exe file `websurfer_server.exe`
 
 ## Contacts
