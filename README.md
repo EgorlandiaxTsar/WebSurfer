@@ -48,8 +48,8 @@ You can also choose a specific site and the search will be executed only on that
 ![search-by-site-example](https://github.com/EgorlandiaxTsar/WebSurferSnippetsStorage/blob/master/static/search-by-site-example.gif?raw=true "Search by site example")
 ## Installation guide
 In this section there is a step-by-step guide to how to install WebSurfer locally
-### MySQL installation
-First of all, you need to set up a database:
+### Installation on Windows
+#### MySQL installation
 - Go to the [installation link](https://dev.mysql.com/downloads/file/?id=520406) and press "No, thanks, just start my download" button
 - Follow the MySQL installer steps
     - On first page choose `Full` installation type
@@ -113,16 +113,74 @@ create table site
 engine = InnoDB;
 ```
 - The script will create a database with required tables to launch the engine
-### Server installation
+#### Server installation
 - After database configuration, you can close MySQL Workbench
-- Now, on the GitHub repository page download the project as .zip
-- Unpack the project in any directory
-- In the downloaded project folder, open file `bin/application.yaml`
-- Change property `spring.datasource.username` to `root` and `spring.datasource.password` to `<your password chosen on the installation step>`
-- Download [Java .zip archive](https://www.dropbox.com/scl/fi/2brpqgufd69cfb7pdj62x/jdk-11.0.7.zip?rlkey=jv7t24ntnv4djxe90fudz2ao3&dl=0)
-- Unzip archive in bin
+- Download [WebSurfer as windows project](https://www.dropbox.com/scl/fi/al2qkxvd7njbwzzjnv12j/WebSurfer.zip?rlkey=fo54jsgqw6a5dird4l80oj9yu&dl=0)
+- Unzip the downloaded file in any place you want
+- In the unzipped project folder, open file `application.yaml`
+- Change property `spring.datasource.password` to `<your password chosen on the installation step>`
 - Now run the server .exe file `websurfer_server.exe`
-
+### Installation on MacOS
+#### Java installation
+- Follow [the guide of Java installation](https://docs.oracle.com/en/java/javase/11/install/installation-jdk-macos.html#JSJIG-GUID-F575EB4A-70D3-4AB4-A20E-DBE95171AB5F) on the official website
+#### MySQL installation
+- Go to the [installation link](https://dev.mysql.com/downloads/file/?id=520328) and press "No, thanks, just start my download" button
+- Then follow the [Windows MySQL installation steps](#mysql-installation)
+#### Server Installation
+- On WebSurfer GitHub repository download the project as .zip (or clone it with `git clone` command)
+- Unzip the project in any place
+- In the unzipped project folder, open file `target/application.yaml`
+- Remove all code and place this:
+```yaml
+engine:
+  sites:
+    - url: https://www.svetlovka.ru
+      name: Светловка
+      request-timeout: 500
+    - url: https://www.skillbox.ru
+      name: Skillbox
+      request-timeout: 500
+    - url: https://ipfran.ru
+      name: Институт прикладной физики
+      request-timeout: 500
+    - url: https://volochek.life
+      name: Вышний Волочек
+      request-timeout: 500
+    - url: http://radiomv.ru
+      name: Радио "Милицейская Волна"
+      request-timeout: 500
+    - url:  https://dimonvideo.ru
+      name: Димон Видео
+      request-timeout: 500
+    - url: https://nikoartgallery.com
+      name: Галерея Искусств Niko
+      request-timeout: 500
+server:
+  port: 80
+spring:
+  datasource:
+    url: jdbc:mysql://localhost:3306/websurfer?useSSL=false&allowPublicKeyRetrieval=true
+    username: root
+    password: <your password>
+    driver-class-name: com.mysql.cj.jdbc.Driver
+  jpa:
+    hibernate:
+      ddl-auto: none
+    open-in-view: true
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.MySQL8Dialect
+  main:
+    allow-circular-references: true
+  output:
+    ansi:
+      enabled: never
+  thymeleaf:
+    prefix: classpath:/templates/
+    suffix: .html
+```
+- Change property `spring.datasource.password` to `<your password chosen on the installation step>`
+- Now run the command line and write `cd <the path for target folder>` and `java -jar WebSurfer-1.0-SNAPSHOT.jar`
 ## Contacts
 **Name:** Egor
 
