@@ -118,7 +118,7 @@ engine = InnoDB;
 - On WebSurfer GitHub repository download the project as .zip (or clone it with `git clone` command)
 - Unzip the project in any place
 - In the unzipped project folder, open file `target/application.yaml`
-- Change property `spring.datasource.password` to `<your password chosen on the installation step>`
+- Change property `spring.datasource.password` to `<your password chosen on the installation step>` (**IF YOUR PASSWORD STARTS WITH '#', YOU NEED TO WRAP THE PASSWORD IN THE DOUBLE QUOTES**)
 - Now run the command line and write `cd <the path for target folder>` and `java -jar WebSurfer-1.0-SNAPSHOT.jar`
 ## Contacts
 **Name:** Egor
