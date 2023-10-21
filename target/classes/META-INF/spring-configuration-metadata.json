@@ -1,0 +1,17 @@
+{
+  "groups": [
+    {
+      "name": "engine",
+      "type": "com.egorgoncharov.websurfer.config.SitesList",
+      "sourceType": "com.egorgoncharov.websurfer.config.SitesList"
+    }
+  ],
+  "properties": [
+    {
+      "name": "engine.sites",
+      "type": "java.util.List<com.egorgoncharov.websurfer.config.Site>",
+      "sourceType": "com.egorgoncharov.websurfer.config.SitesList"
+    }
+  ],
+  "hints": []
+}
