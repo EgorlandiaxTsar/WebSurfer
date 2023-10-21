@@ -47,16 +47,17 @@ You can also choose a specific site and the search will be executed only on that
 
 ![search-by-site-example](https://github.com/EgorlandiaxTsar/WebSurferSnippetsStorage/blob/master/static/search-by-site-example.gif?raw=true "Search by site example")
 ## Installation guide
-In this section there is a step-by-step guide to how to install WebSurfer locally
-### Installation on Windows
-#### MySQL installation
-- Go to the [installation link](https://dev.mysql.com/downloads/file/?id=520406) and press "No, thanks, just start my download" button
+In this section you can find a step-by-step guide to how to install WebSurfer locally
+### Java installation
+- Follow the guide of Java installation [for Windows](https://docs.oracle.com/en/java/javase/11/install/installation-jdk-microsoft-windows-platforms.html#JSJIG-GUID-DAF345BA-B3E7-4CF2-B87A-B6662D691840) or [for Mac](https://docs.oracle.com/en/java/javase/11/install/installation-jdk-macos.html#JSJIG-GUID-F575EB4A-70D3-4AB4-A20E-DBE95171AB5F) on the official website
+### MySQL installation
+- Go to the installation link [for Windows](https://dev.mysql.com/downloads/file/?id=520406) or [for Mac](https://dev.mysql.com/downloads/file/?id=520328) and press "No, thanks, just start my download" button
 - Follow the MySQL installer steps
     - On first page choose `Full` installation type
     - Then press `Execute` and `Next`
     - In `Accounts and Roles` tab set the password for your database (**DO NOT LOOSE IT, YOU WILL NEED IT LATER**) 
     - Then press `Next`, `Next`, `Execute` and `Finish`
-- Once MySQL is installed, open MySQL Workbench and connect through `Local instance MySQL80` by using yout password
+- Once MySQL is installed, open MySQL Workbench and connect through `Local instance MySQL80` by using your password
 - In the `Query 1` tab, opened by default, past and run the following script:
 ```SQL
 CREATE DATABASE `websurfer` DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT ENCRYPTION='N';
@@ -113,20 +114,7 @@ create table site
 engine = InnoDB;
 ```
 - The script will create a database with required tables to launch the engine
-#### Server installation
-- After database configuration, you can close MySQL Workbench
-- Download [WebSurfer as windows project](https://www.dropbox.com/scl/fi/al2qkxvd7njbwzzjnv12j/WebSurfer.zip?rlkey=fo54jsgqw6a5dird4l80oj9yu&dl=0)
-- Unzip the downloaded file in any place you want
-- In the unzipped project folder, open file `application.yaml`
-- Change property `spring.datasource.password` to `<your password chosen on the installation step>`
-- Now run the server .exe file `websurfer_server.exe`
-### Installation on MacOS
-#### Java installation
-- Follow [the guide of Java installation](https://docs.oracle.com/en/java/javase/11/install/installation-jdk-macos.html#JSJIG-GUID-F575EB4A-70D3-4AB4-A20E-DBE95171AB5F) on the official website
-#### MySQL installation
-- Go to the [installation link](https://dev.mysql.com/downloads/file/?id=520328) and press "No, thanks, just start my download" button
-- Then follow the [Windows MySQL installation steps](#mysql-installation)
-#### Server Installation
+### Server Installation
 - On WebSurfer GitHub repository download the project as .zip (or clone it with `git clone` command)
 - Unzip the project in any place
 - In the unzipped project folder, open file `target/application.yaml`
@@ -134,8 +122,6 @@ engine = InnoDB;
 - Now run the command line and write `cd <the path for target folder>` and `java -jar WebSurfer-1.0-SNAPSHOT.jar`
 ## Contacts
 **Name:** Egor
-
-**Instagram:** @egorgoncharov.e
 
 **Telegram:** @egorlandiaxtsar
  
