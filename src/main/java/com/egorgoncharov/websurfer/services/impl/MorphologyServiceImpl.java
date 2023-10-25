@@ -14,7 +14,6 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 
-@SuppressWarnings("BooleanMethodIsAlwaysInverted")
 public class MorphologyServiceImpl implements MorphologyService {
     private static final Logger LOGGER = LogManager.getLogger(MorphologyService.class);
     private static final String[] PARTICLES = {"МЕЖД", "ПРЕДЛ", "СОЮЗ"};

@@ -15,7 +15,6 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.Optional;
 
-@SuppressWarnings("DataFlowIssue")
 @RestController
 @RequestMapping("/api")
 @RequiredArgsConstructor
