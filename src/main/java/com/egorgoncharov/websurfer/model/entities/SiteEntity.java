@@ -9,11 +9,8 @@ import java.util.List;
 
 @Entity
 @Table(name = "site")
+@Data
 @NoArgsConstructor
-@Getter
-@Setter
-@ToString
-@EqualsAndHashCode
 public class SiteEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

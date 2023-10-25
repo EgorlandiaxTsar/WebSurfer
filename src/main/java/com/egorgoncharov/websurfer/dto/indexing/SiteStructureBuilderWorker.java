@@ -13,20 +13,20 @@ import java.util.concurrent.RecursiveTask;
 
 public class SiteStructureBuilderWorker extends RecursiveTask<SiteTree> {
     private static final Logger LOGGER = LogManager.getLogger(SiteStructureBuilderWorker.class);
-    private final SiteTree PARENT_TREE;
-    private final IndexingService INDEXING_SERVICE;
-    private final int REQ_TIMEOUT_MILLIS;
+    private final SiteTree parentTree;
+    private final IndexingService indexingService;
+    private final int requestTimeout;
 
     public SiteStructureBuilderWorker(SiteTree parentSiteTree, IndexingService indexingService, int requestTimeoutMillis) {
-        this.PARENT_TREE = parentSiteTree;
-        this.INDEXING_SERVICE = indexingService;
-        this.REQ_TIMEOUT_MILLIS = requestTimeoutMillis;
+        this.parentTree = parentSiteTree;
+        this.indexingService = indexingService;
+        this.requestTimeout = requestTimeoutMillis;
     }
 
     @Override
     protected SiteTree compute() {
         checkState();
-        String requestURL = PARENT_TREE.getUrl().getProtocol() + "://" + PARENT_TREE.getUrl().getHost() + PARENT_TREE.getPath();
+        String requestURL = parentTree.getUrl().getProtocol() + "://" + parentTree.getUrl().getHost() + parentTree.getPath();
         List<SiteStructureBuilderWorker> tasks = new ArrayList<>();
         try {
             DocumentResponse documentResponse = PageParser.getDocument(new URL(requestURL));
@@ -35,16 +35,16 @@ public class SiteStructureBuilderWorker extends RecursiveTask<SiteTree> {
                 doc = documentResponse.getDocument();
                 List<SiteTree> siteTrees = new ArrayList<>(PageParser.getChildPages(new URL(requestURL), doc));
                 siteTrees.forEach(siteTree -> {
-                    if (!INDEXING_SERVICE.hasPage(siteTree.getUrl().toString() + "/")) {
-                        SiteStructureBuilderWorker siteStructureBuilderWorker = new SiteStructureBuilderWorker(siteTree, INDEXING_SERVICE, REQ_TIMEOUT_MILLIS);
+                    if (!indexingService.hasPage(siteTree.getUrl().toString() + "/")) {
+                        SiteStructureBuilderWorker siteStructureBuilderWorker = new SiteStructureBuilderWorker(siteTree, indexingService, requestTimeout);
                         tasks.add(siteStructureBuilderWorker);
                         siteStructureBuilderWorker.fork();
                     }
                 });
             }
-            INDEXING_SERVICE.addPageData(PARENT_TREE.getUrl().getProtocol() + "://" + PARENT_TREE.getUrl().getHost(), PARENT_TREE.getPath(), documentResponse.getResponseCode(), doc == null ? "" : doc.toString());
-            tasks.forEach(task -> PARENT_TREE.getChildPages().add(task.join()));
-            return PARENT_TREE;
+            indexingService.addPageData(parentTree.getUrl().getProtocol() + "://" + parentTree.getUrl().getHost(), parentTree.getPath(), documentResponse.getResponseCode(), doc == null ? "" : doc.toString());
+            tasks.forEach(task -> parentTree.getChildPages().add(task.join()));
+            return parentTree;
         } catch (MalformedURLException e) {
             LOGGER.warn("Failed to index the following page: \"" + requestURL + "\", message=\"" + e.getMessage() + "\"");
         }
@@ -52,11 +52,11 @@ public class SiteStructureBuilderWorker extends RecursiveTask<SiteTree> {
     }
 
     public SiteTree getParentPage() {
-        return PARENT_TREE;
+        return parentTree;
     }
 
     private void checkState() {
-        if (INDEXING_SERVICE.getEngineStatus() == IndexingEngineStatus.STOPPING || INDEXING_SERVICE.getEngineStatus() == IndexingEngineStatus.STOPPED) {
+        if (indexingService.getEngineStatus() == IndexingEngineStatus.STOPPING || indexingService.getEngineStatus() == IndexingEngineStatus.STOPPED) {
             throw new IndexingBranchInterruptedException("Force stopping indexing thread \"" + Thread.currentThread().getName() + "\"");
         }
     }

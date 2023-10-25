@@ -21,9 +21,9 @@ import java.util.List;
 @RequiredArgsConstructor
 public class StatisticsServiceImpl implements StatisticsService {
     private static final Logger LOGGER = LogManager.getLogger(StatisticsServiceImpl.class);
-    private final SitesRepository SITES_REPOSITORY;
-    private final PagesRepository PAGES_REPOSITORY;
-    private final LemmasRepository LEMMAS_REPOSITORY;
+    private final SitesRepository sitesRepository;
+    private final PagesRepository pagesRepository;
+    private final LemmasRepository lemmasRepository;
 
     @Override
     public StatisticsResponse getStatistics() {
@@ -33,23 +33,21 @@ public class StatisticsServiceImpl implements StatisticsService {
         StatisticsData statisticsData = new StatisticsData();
         statisticsResponse.setStatistics(statisticsData);
         TotalStatistics totalStatistics = new TotalStatistics();
-        totalStatistics.setSites((int) SITES_REPOSITORY.count());
-        totalStatistics.setPages((int) PAGES_REPOSITORY.count());
-        totalStatistics.setLemmas((int) LEMMAS_REPOSITORY.count());
-        totalStatistics.setIndexing(!SITES_REPOSITORY.findSiteEntitiesByStatus(IndexingStatuses.INDEXING).isEmpty());
+        totalStatistics.setSites((int) sitesRepository.count());
+        totalStatistics.setPages((int) pagesRepository.count());
+        totalStatistics.setLemmas((int) lemmasRepository.count());
+        totalStatistics.setIndexing(!sitesRepository.findSiteEntitiesByStatus(IndexingStatuses.INDEXING).isEmpty());
         statisticsData.setTotal(totalStatistics);
         List<DetailedStatisticsItem> detailedStatisticsItems = new ArrayList<>();
-        SITES_REPOSITORY.findAll().forEach(site -> {
-            detailedStatisticsItems.add(new DetailedStatisticsItem(
-                    site.getUrl(),
-                    site.getName(),
-                    site.getStatus().toString().toUpperCase(),
-                    site.getStatusTime().getTime(),
-                    site.getLastError(),
-                    PAGES_REPOSITORY.findPageEntitiesBySiteId(site.getId()).size(),
-                    LEMMAS_REPOSITORY.findLemmaEntitiesBySiteId(site.getId()).size()
-            ));
-        });
+        sitesRepository.findAll().forEach(site -> detailedStatisticsItems.add(new DetailedStatisticsItem(
+                site.getUrl(),
+                site.getName(),
+                site.getStatus().toString().toUpperCase(),
+                site.getStatusTime().getTime(),
+                site.getLastError(),
+                pagesRepository.findPageEntitiesBySiteId(site.getId()).size(),
+                lemmasRepository.findLemmaEntitiesBySiteId(site.getId()).size()
+        )));
         statisticsData.setDetailed(detailedStatisticsItems);
         LOGGER.info("Statistics model created, releasing");
         return statisticsResponse;

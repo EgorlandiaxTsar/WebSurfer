@@ -2,12 +2,9 @@ package com.egorgoncharov.websurfer.dto.search;
 
 import lombok.*;
 
-@Getter
-@Setter
+@Data
 @AllArgsConstructor
 @NoArgsConstructor
-@ToString
-@EqualsAndHashCode
 public class SearchResponseItem {
     private String site;
     private String siteName;

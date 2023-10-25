@@ -6,12 +6,8 @@ import javax.persistence.*;
 
 @Entity
 @Table(name = "`index`")
-@NoArgsConstructor
-@Getter
-@Setter
-@ToString
-@EqualsAndHashCode
 @Data
+@NoArgsConstructor
 public class IndexEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

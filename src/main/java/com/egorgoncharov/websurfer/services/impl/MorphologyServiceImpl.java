@@ -19,7 +19,7 @@ public class MorphologyServiceImpl implements MorphologyService {
     private static final Logger LOGGER = LogManager.getLogger(MorphologyService.class);
     private static final String[] PARTICLES = {"МЕЖД", "ПРЕДЛ", "СОЮЗ"};
     private static final String RUSSIAN_WORD_REGEX = ".*[А-Яа-яЁё]+.*";
-    private final LuceneMorphology MORPHOLOGY;
+    private final LuceneMorphology morphology;
 
     public static MorphologyServiceImpl getInstance() {
         try {
@@ -31,7 +31,7 @@ public class MorphologyServiceImpl implements MorphologyService {
     }
 
     private MorphologyServiceImpl(RussianLuceneMorphology morphology) {
-        this.MORPHOLOGY = morphology;
+        this.morphology = morphology;
     }
 
     @Override
@@ -144,14 +144,14 @@ public class MorphologyServiceImpl implements MorphologyService {
         if (!isRussianWord(word)) {
             return null;
         }
-        if (!isWord(MORPHOLOGY.getMorphInfo(word).get(0))) {
+        if (!isWord(morphology.getMorphInfo(word).get(0))) {
             return null;
         }
         return getWordNormalForm(word);
     }
 
     private String getWordNormalForm(String word) {
-        List<String> normalForms = MORPHOLOGY.getNormalForms(word);
+        List<String> normalForms = morphology.getNormalForms(word);
         return normalForms.isEmpty() ? null : normalForms.get(0);
     }
 }

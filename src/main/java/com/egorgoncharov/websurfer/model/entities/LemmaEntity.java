@@ -7,11 +7,8 @@ import java.util.List;
 
 @Entity
 @Table(name = "lemma")
+@Data
 @NoArgsConstructor
-@Getter
-@Setter
-@ToString
-@EqualsAndHashCode
 public class LemmaEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

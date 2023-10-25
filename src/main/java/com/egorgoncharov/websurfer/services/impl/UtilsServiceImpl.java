@@ -12,7 +12,7 @@ import java.net.URL;
 @Service
 @RequiredArgsConstructor
 public class UtilsServiceImpl implements UtilsService {
-    private final SitesList SITES_LIST;
+    private final SitesList sitesList;
 
     @Override
     public boolean compareUrls(String u1, String u2) {
@@ -33,7 +33,7 @@ public class UtilsServiceImpl implements UtilsService {
     @Override
     public boolean siteIncluded(String url) {
         String host = getAbsoluteUrl(url.replaceFirst("https://", "").replaceFirst("http://", "").split("/")[0]);
-        for (Site site : SITES_LIST.getSites()) {
+        for (Site site : sitesList.getSites()) {
             if (compareUrls(site.getUrl(), host)) {
                 return true;
             }

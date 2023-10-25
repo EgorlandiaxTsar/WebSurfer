@@ -10,12 +10,9 @@ import org.apache.logging.log4j.Logger;
 
 import java.util.List;
 
-@Getter
-@Setter
+@Data
 @AllArgsConstructor
 @NoArgsConstructor
-@ToString
-@EqualsAndHashCode
 public class SearchResponse {
     private static final Logger LOGGER = LogManager.getLogger(SearchResponse.class);
     private boolean result;

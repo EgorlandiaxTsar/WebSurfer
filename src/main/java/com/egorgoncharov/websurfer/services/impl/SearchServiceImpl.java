@@ -20,10 +20,10 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class SearchServiceImpl implements SearchService {
     private static final Logger LOGGER = LogManager.getLogger(SearchService.class);
-    private final MorphologyServiceImpl MORPHOLOGY_SERVICE = MorphologyServiceImpl.getInstance();
-    private final UtilsServiceImpl UTILS;
-    private final LemmasRepository LEMMAS_REPOSITORY;
-    private final IndexesRepository INDEXES_REPOSITORY;
+    private final MorphologyServiceImpl morphologyService = MorphologyServiceImpl.getInstance();
+    private final UtilsServiceImpl utils;
+    private final LemmasRepository lemmasRepository;
+    private final IndexesRepository indexesRepository;
 
     @Override
     public SearchResponse search(String query, String site, int offset, int limit) {
@@ -34,7 +34,7 @@ public class SearchServiceImpl implements SearchService {
         if (site == null || site.equals("none")) {
             return globalSiteSearch(query, offset, limit);
         }
-        if (!UTILS.validateUrl(site)) {
+        if (!utils.validateUrl(site)) {
             LOGGER.warn("Search request rejected: 400, Site URL is malformed");
             return new SearchResponse(false, 400, -1, null, "Некорректный URL-Адрес");
         }
@@ -43,7 +43,7 @@ public class SearchServiceImpl implements SearchService {
 
     private SearchResponse singleSiteSearch(String query, String site, int offset, int limit) {
         LOGGER.info("Searching through \"" + site + "\", query \"" + query + "\"");
-        List<String> lemmas = MORPHOLOGY_SERVICE.getLemmas(query);
+        List<String> lemmas = morphologyService.getLemmas(query);
         if (lemmas.isEmpty()) {
             return new SearchResponse(true, 200, 0, new ArrayList<>(), null);
         }
@@ -61,7 +61,7 @@ public class SearchServiceImpl implements SearchService {
 
     private SearchResponse globalSiteSearch(String query, int offset, int limit) {
         LOGGER.info("Searching through all sites, query \"" + query + "\"");
-        List<String> lemmas = MORPHOLOGY_SERVICE.getLemmas(query);
+        List<String> lemmas = morphologyService.getLemmas(query);
         if (lemmas.isEmpty()) {
             return new SearchResponse(true, 200, 0, new ArrayList<>(), null);
         }
@@ -79,14 +79,14 @@ public class SearchServiceImpl implements SearchService {
 
     private List<LemmaEntity> findAndSortRelatedLemmas(List<String> lemmas, String site) {
         List<LemmaEntity> lemmaEntities = new ArrayList<>();
-        lemmas.forEach(l -> lemmaEntities.add(LEMMAS_REPOSITORY.findLemmasByLemmaAndSiteUrl(l, site)));
+        lemmas.forEach(l -> lemmaEntities.add(lemmasRepository.findLemmasByLemmaAndSiteUrl(l, site)));
         lemmaEntities.removeIf(Objects::isNull);
         return sortRelatedLemmas(lemmaEntities);
     }
 
     private List<LemmaEntity> findAndSortRelatedLemmas(List<String> lemmas) {
         List<LemmaEntity> lemmaEntities = new ArrayList<>();
-        lemmas.forEach(l -> lemmaEntities.addAll(LEMMAS_REPOSITORY.findLemmasByLemma(l)));
+        lemmas.forEach(l -> lemmaEntities.addAll(lemmasRepository.findLemmasByLemma(l)));
         lemmaEntities.removeIf(Objects::isNull);
         return sortRelatedLemmas(lemmaEntities);
     }
@@ -107,7 +107,7 @@ public class SearchServiceImpl implements SearchService {
     private List<PageEntity> findRelatedPages(List<LemmaEntity> lemmaEntities, String site) {
         LemmaEntity rarestLemma = lemmaEntities.get(0);
         List<PageEntity> pages = new ArrayList<>();
-        INDEXES_REPOSITORY.findIndexesByLemmaAndSiteUrl(rarestLemma.getLemma(), site).forEach(index -> pages.add(index.getPage()));
+        indexesRepository.findIndexesByLemmaAndSiteUrl(rarestLemma.getLemma(), site).forEach(index -> pages.add(index.getPage()));
         lemmaEntities.remove(0);
         List<PageEntity> filteredPages = new ArrayList<>();
         for (LemmaEntity lemma : lemmaEntities) {
@@ -129,7 +129,7 @@ public class SearchServiceImpl implements SearchService {
     private List<PageEntity> findRelatedPages(List<LemmaEntity> lemmaEntities) {
         LemmaEntity rarestLemma = lemmaEntities.get(0);
         List<PageEntity> pages = new ArrayList<>();
-        INDEXES_REPOSITORY.findIndexesByLemma(rarestLemma.getLemma()).forEach(index -> pages.add(index.getPage()));
+        indexesRepository.findIndexesByLemma(rarestLemma.getLemma()).forEach(index -> pages.add(index.getPage()));
         lemmaEntities.remove(0);
         List<PageEntity> filteredPages = new ArrayList<>();
         for (LemmaEntity lemma : lemmaEntities) {
@@ -191,8 +191,8 @@ public class SearchServiceImpl implements SearchService {
                 page.getSite().getUrl(),
                 page.getSite().getName(),
                 page.getPath(),
-                MORPHOLOGY_SERVICE.getTitle(page.getContent()),
-                MORPHOLOGY_SERVICE.getSnippets(lemmas, page.getContent()),
+                morphologyService.getTitle(page.getContent()),
+                morphologyService.getSnippets(lemmas, page.getContent()),
                 rel
         )));
         searchResponse.setData(searchResponseItems.stream().skip(offset).limit(limit).collect(Collectors.toList()));

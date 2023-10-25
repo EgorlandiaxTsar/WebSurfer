@@ -32,15 +32,15 @@ import java.util.concurrent.atomic.AtomicReference;
 @RequiredArgsConstructor
 public class IndexingServiceImpl implements IndexingService {
     private static final Logger LOGGER = LogManager.getLogger(IndexingServiceImpl.class);
-    private final List<IndexingForkJoinPoolRunner> INITIAL_THREADS = new ArrayList<>();
-    private final AtomicReference<IndexingEngineStatus> ENGINE_STATUS = new AtomicReference<>(IndexingEngineStatus.STOPPED);
-    private final MorphologyServiceImpl MORPHOLOGY_SERVICE = MorphologyServiceImpl.getInstance();
-    private final UtilsServiceImpl UTILS;
-    private final SitesList SITES_LIST;
-    private final SitesRepository SITES_REPOSITORY;
-    private final PagesRepository PAGES_REPOSITORY;
-    private final LemmasRepository LEMMAS_REPOSITORY;
-    private final IndexesRepository INDEXES_REPOSITORY;
+    private final List<IndexingForkJoinPoolRunner> initialThreads = new ArrayList<>();
+    private final AtomicReference<IndexingEngineStatus> engineStatus = new AtomicReference<>(IndexingEngineStatus.STOPPED);
+    private final MorphologyServiceImpl morphologyService = MorphologyServiceImpl.getInstance();
+    private final UtilsServiceImpl utils;
+    private final SitesList sitesList;
+    private final SitesRepository sitesRepository;
+    private final PagesRepository pagesRepository;
+    private final LemmasRepository lemmasRepository;
+    private final IndexesRepository indexesRepository;
     private boolean blockRequests = false;
     private int indexingsEnded = 0;
 
@@ -50,15 +50,15 @@ public class IndexingServiceImpl implements IndexingService {
             LOGGER.warn("Indexing start rejected: 429, Requests overload");
             return new IndexingResponse(false, 429, "Слишком много запросов");
         }
-        if (ENGINE_STATUS.get() == IndexingEngineStatus.STOPPING) {
+        if (engineStatus.get() == IndexingEngineStatus.STOPPING) {
             LOGGER.warn("Indexing start rejected: 400, Indexing is stopping");
             return new IndexingResponse(false, 400, "Индексация останавливается");
         }
-        if (ENGINE_STATUS.get() == IndexingEngineStatus.STARTING) {
+        if (engineStatus.get() == IndexingEngineStatus.STARTING) {
             LOGGER.warn("Indexing start rejected: 400, Indexing is starting");
             return new IndexingResponse(false, 400, "Индексация запускается");
         }
-        if (ENGINE_STATUS.get() == IndexingEngineStatus.STARTED) {
+        if (engineStatus.get() == IndexingEngineStatus.STARTED) {
             LOGGER.warn("Indexing start rejected: 400, Indexing is already started");
             return new IndexingResponse(false, 400, "Индексация уже запущена");
         }
@@ -66,7 +66,7 @@ public class IndexingServiceImpl implements IndexingService {
         LOGGER.info("Indexing is starting");
         long start = System.currentTimeMillis();
         switchEngineStatus(IndexingEngineStatus.STARTING);
-        UTILS.asyncInvoke(() -> {
+        utils.asyncInvoke(() -> {
             clearRepositories();
             beginIndexing();
             LOGGER.info("Indexing successfully started in " + (System.currentTimeMillis() + start) + "ms");
@@ -81,18 +81,18 @@ public class IndexingServiceImpl implements IndexingService {
             LOGGER.warn("Single page indexing start rejected: 429, Requests overload");
             return new IndexingResponse(false, 429, "Слишком много запросов");
         }
-        if (!UTILS.validateUrl(target)) {
+        if (!utils.validateUrl(target)) {
             LOGGER.warn("Single page indexing start rejected: 400, Incorrect URL");
             return new IndexingResponse(false, 400, "Некорректный URL-Адрес");
         }
-        if (!UTILS.siteIncluded(target)) {
+        if (!utils.siteIncluded(target)) {
             LOGGER.warn("Single page indexing start rejected: 404, Page not found");
             return new IndexingResponse(false, 404, "Данная страница находится за пределами сайтов, указанных в конфигурационном файле");
         }
         blockRequests();
         LOGGER.info("Single page indexing is starting");
         long start = System.currentTimeMillis();
-        UTILS.asyncInvoke(() -> {
+        utils.asyncInvoke(() -> {
             clearPageRepository(target);
             beginIndexing(target);
             LOGGER.info("Single page indexing is started in " + (System.currentTimeMillis() - start) + "ms");
@@ -106,15 +106,15 @@ public class IndexingServiceImpl implements IndexingService {
             LOGGER.warn("Indexing stop rejected: 429, Requests overload");
             return new IndexingResponse(false, 429, "Слишком много запросов");
         }
-        if (ENGINE_STATUS.get() == IndexingEngineStatus.STARTING) {
+        if (engineStatus.get() == IndexingEngineStatus.STARTING) {
             LOGGER.warn("Indexing stop rejected: 400, Indexing is starting");
             return new IndexingResponse(false, 400, "Индексация запускается");
         }
-        if (ENGINE_STATUS.get() == IndexingEngineStatus.STOPPING) {
+        if (engineStatus.get() == IndexingEngineStatus.STOPPING) {
             LOGGER.warn("Indexing stop rejected: 400, Indexing is stopping");
             return new IndexingResponse(false, 400, "Индексация останавливается");
         }
-        if (ENGINE_STATUS.get() == IndexingEngineStatus.STOPPED) {
+        if (engineStatus.get() == IndexingEngineStatus.STOPPED) {
             LOGGER.warn("Indexing stop rejected: 400, Indexing is not started");
             return new IndexingResponse(false, 400, "Индексация не запущенна");
         }
@@ -122,16 +122,16 @@ public class IndexingServiceImpl implements IndexingService {
         LOGGER.info("Indexing is stopping");
         long start = System.currentTimeMillis();
         switchEngineStatus(IndexingEngineStatus.STOPPING);
-        UTILS.asyncInvoke(() -> {
-            INITIAL_THREADS.forEach(Thread::interrupt);
-            List<SiteEntity> indexingSites = new ArrayList<>(SITES_REPOSITORY.findSiteEntitiesByStatus(IndexingStatuses.INDEXING));
+        utils.asyncInvoke(() -> {
+            initialThreads.forEach(Thread::interrupt);
+            List<SiteEntity> indexingSites = new ArrayList<>(sitesRepository.findSiteEntitiesByStatus(IndexingStatuses.INDEXING));
             indexingSites.forEach(indexingSite -> {
                 indexingSite.setStatus(IndexingStatuses.FAILED);
                 indexingSite.setLastError("Индексация остановлена пользователем");
                 indexingSite.setStatusTime(new Date());
             });
-            SITES_REPOSITORY.saveAll(indexingSites);
-            INITIAL_THREADS.clear();
+            sitesRepository.saveAll(indexingSites);
+            initialThreads.clear();
             LOGGER.info("Indexing stopped in " + (System.currentTimeMillis() - start) + "ms");
             switchEngineStatus(IndexingEngineStatus.STOPPED);
         });
@@ -141,8 +141,8 @@ public class IndexingServiceImpl implements IndexingService {
     @Override
     public synchronized void addPageData(String site, String path, int statusCode, String content) {
         LOGGER.info("Adding page data (parameters: 'site'=\"" + site + "\", 'path'=\"" + path + "\", 'statusCode'=" + statusCode + ", 'content'=\"" + "...\")");
-        SiteEntity siteEntity = SITES_REPOSITORY.findSiteEntityByUrl(site);
-        PageEntity page = PAGES_REPOSITORY.save(new PageEntity(0, siteEntity, path, statusCode, content));
+        SiteEntity siteEntity = sitesRepository.findSiteEntityByUrl(site);
+        PageEntity page = pagesRepository.save(new PageEntity(0, siteEntity, path, statusCode, content));
         if (!content.isEmpty()) {
             updateLemmasAndIndexes(siteEntity, page, content);
         }
@@ -150,15 +150,15 @@ public class IndexingServiceImpl implements IndexingService {
 
     @Override
     public boolean hasPage(String url) {
-        return PAGES_REPOSITORY.findPageEntityByUrl(url) != null;
+        return pagesRepository.findPageEntityByUrl(url) != null;
     }
 
     public void addOrUpdatePageData(String site, String path, int statusCode, String content) {
         LOGGER.info("Adding/Updating page data (parameters: 'site'=\"" + site + "\", 'path'=\"" + path + "\", 'statusCode'=" + statusCode + ", 'content'=\"" + "...\")");
-        SiteEntity siteEntity = SITES_REPOSITORY.findSiteEntityByUrl(site);
-        PageEntity page = PAGES_REPOSITORY.findPageEntityByUrl(UTILS.getAbsoluteUrl(site + path) + "/");
+        SiteEntity siteEntity = sitesRepository.findSiteEntityByUrl(site);
+        PageEntity page = pagesRepository.findPageEntityByUrl(utils.getAbsoluteUrl(site + path) + "/");
         if (page == null) {
-            page = PAGES_REPOSITORY.save(new PageEntity(0, siteEntity, path, statusCode, content));
+            page = pagesRepository.save(new PageEntity(0, siteEntity, path, statusCode, content));
         }
         if (!content.isEmpty()) {
             updateLemmasAndIndexes(siteEntity, page, content);
@@ -167,17 +167,17 @@ public class IndexingServiceImpl implements IndexingService {
 
     @Override
     public IndexingEngineStatus getEngineStatus() {
-        return ENGINE_STATUS.get();
+        return engineStatus.get();
     }
 
     private void switchEngineStatus(IndexingEngineStatus engineStatus) {
-        this.ENGINE_STATUS.set(engineStatus);
+        this.engineStatus.set(engineStatus);
     }
 
     private void blockRequests() {
         if (!blockRequests) {
             blockRequests = true;
-            UTILS.asyncInvoke(() -> {
+            utils.asyncInvoke(() -> {
                 try {
                     Thread.sleep(1000);
                 } catch (InterruptedException e) {
@@ -191,7 +191,7 @@ public class IndexingServiceImpl implements IndexingService {
     private void reportIndexingEnd(String site) {
         LOGGER.info("Site \"" + site + "\" has been indexed");
         indexingsEnded++;
-        if (indexingsEnded == SITES_LIST.getSites().size()) {
+        if (indexingsEnded == sitesList.getSites().size()) {
             indexingsEnded = 0;
             stopIndexing();
         }
@@ -199,18 +199,18 @@ public class IndexingServiceImpl implements IndexingService {
 
     private void clearRepositories() {
         try {
-            SITES_REPOSITORY.deleteAll();
-            PAGES_REPOSITORY.deleteAll();
-            LEMMAS_REPOSITORY.deleteAll();
-            INDEXES_REPOSITORY.deleteAll();
+            sitesRepository.deleteAll();
+            pagesRepository.deleteAll();
+            lemmasRepository.deleteAll();
+            indexesRepository.deleteAll();
         } catch (PessimisticLockException e) {
             LOGGER.error("Pessimistic Lock exception while clearing repositories detected (too much time spent on clearing data), message=\"" + e.getMessage() + "\"");
         }
     }
 
     private void clearPageRepository(String target) {
-        target = UTILS.getAbsoluteUrl(target);
-        PageEntity page = PAGES_REPOSITORY.findPageEntityByUrl(target);
+        target = utils.getAbsoluteUrl(target);
+        PageEntity page = pagesRepository.findPageEntityByUrl(target);
         if (page == null) return;
         List<IndexEntity> indexesToDelete = new ArrayList<>();
         List<LemmaEntity> lemmasToDelete = new ArrayList<>();
@@ -218,27 +218,27 @@ public class IndexingServiceImpl implements IndexingService {
             indexesToDelete.add(index);
             lemmasToDelete.add(index.getLemma());
         });
-        LEMMAS_REPOSITORY.deleteAll(lemmasToDelete);
-        INDEXES_REPOSITORY.deleteAll(indexesToDelete);
-        PAGES_REPOSITORY.delete(page);
+        lemmasRepository.deleteAll(lemmasToDelete);
+        indexesRepository.deleteAll(indexesToDelete);
+        pagesRepository.delete(page);
     }
 
     private void beginIndexing() {
         List<SiteEntity> sitesSQLEntities = new ArrayList<>();
-        SITES_LIST.getSites().forEach(initialSite -> {
+        sitesList.getSites().forEach(initialSite -> {
             sitesSQLEntities.add(new SiteEntity(0, IndexingStatuses.INDEXING, new Date(), null, initialSite.getUrl(), initialSite.getName()));
             ForkJoinPool siteIndexingTasks = new ForkJoinPool();
-            INITIAL_THREADS.add(new IndexingForkJoinPoolRunner(() -> {
+            initialThreads.add(new IndexingForkJoinPoolRunner(() -> {
                 setupSiteIndexingThread(initialSite, siteIndexingTasks);
                 reportIndexingEnd(initialSite.getUrl());
             }, siteIndexingTasks));
         });
-        SITES_REPOSITORY.saveAll(sitesSQLEntities);
-        INITIAL_THREADS.forEach(Thread::start);
+        sitesRepository.saveAll(sitesSQLEntities);
+        initialThreads.forEach(Thread::start);
     }
 
     private void beginIndexing(String target) {
-        target = UTILS.getAbsoluteUrl(target) + "/";
+        target = utils.getAbsoluteUrl(target) + "/";
         try {
             URL targetUrl = new URL(target);
             String requestURL = targetUrl.getProtocol() + "://" + targetUrl.getHost() + targetUrl.getPath();
@@ -254,7 +254,7 @@ public class IndexingServiceImpl implements IndexingService {
     }
 
     private void setupSiteIndexingThread(Site targetSite, ForkJoinPool taskPool) {
-        SiteEntity siteSQLEntity = SITES_REPOSITORY.findSiteEntityByUrl(targetSite.getUrl());
+        SiteEntity siteSQLEntity = sitesRepository.findSiteEntityByUrl(targetSite.getUrl());
         try {
             SiteTree siteTree = taskPool.invoke(
                     new SiteStructureBuilderWorker(
@@ -272,7 +272,7 @@ public class IndexingServiceImpl implements IndexingService {
                 siteSQLEntity.setStatus(IndexingStatuses.INDEXED);
             }
             siteSQLEntity.setStatusTime(new Date());
-            SITES_REPOSITORY.save(siteSQLEntity);
+            sitesRepository.save(siteSQLEntity);
         } catch (IndexingBranchInterruptedException e) {
             System.out.println(e.getMessage());
             LOGGER.warn("Forced termination of indexing branch, message=\"" + e.getMessage() + "\"");
@@ -282,15 +282,15 @@ public class IndexingServiceImpl implements IndexingService {
             siteSQLEntity.setStatus(IndexingStatuses.FAILED);
             siteSQLEntity.setLastError("Некорректный URL");
             siteSQLEntity.setStatusTime(new Date());
-            SITES_REPOSITORY.save(siteSQLEntity);
+            sitesRepository.save(siteSQLEntity);
         } catch (NullPointerException e) {
             LOGGER.error("Unexpected Null Pointer exception detected, message=\"" + e.getMessage() + "\"");
         }
     }
 
     private synchronized void updateLemmasAndIndexes(SiteEntity site, PageEntity page, String content) {
-        String docTextContent = MORPHOLOGY_SERVICE.getPageText(Jsoup.parse(content));
-        Map<String, Integer> lemmaFrequency = new HashMap<>(MORPHOLOGY_SERVICE.getLemmasStatistics(docTextContent));
+        String docTextContent = morphologyService.getPageText(Jsoup.parse(content));
+        Map<String, Integer> lemmaFrequency = new HashMap<>(morphologyService.getLemmasStatistics(docTextContent));
         List<LemmaEntity> lemmaEntities = new ArrayList<>();
         List<IndexEntity> indexEntities = new ArrayList<>();
         for (Map.Entry<String, Integer> entry : lemmaFrequency.entrySet()) {
@@ -298,7 +298,7 @@ public class IndexingServiceImpl implements IndexingService {
             Integer freq = entry.getValue();
             LemmaEntity lemmaEntity = new LemmaEntity(0, site, key, 1);
             try {
-                LemmaEntity availableLemma = LEMMAS_REPOSITORY.findLemmasByLemmaAndSiteUrl(key, site.getUrl());
+                LemmaEntity availableLemma = lemmasRepository.findLemmasByLemmaAndSiteUrl(key, site.getUrl());
                 if (availableLemma != null) {
                     lemmaEntity.setId(availableLemma.getId());
                     lemmaEntity.setFrequency(availableLemma.getFrequency() + 1);
@@ -309,13 +309,13 @@ public class IndexingServiceImpl implements IndexingService {
                 LOGGER.error("Incorrect Result Size Data Access exception detected (database returned multiple results when single result was expected), message=\"" + e.getMessage() + "\"");
             }
         }
-        List<LemmaEntity> addedLemmas = new ArrayList<>((Collection<LemmaEntity>) LEMMAS_REPOSITORY.saveAll(lemmaEntities));
+        List<LemmaEntity> addedLemmas = new ArrayList<>((Collection<LemmaEntity>) lemmasRepository.saveAll(lemmaEntities));
         for (int i = 0; i < addedLemmas.size(); i++) {
             LemmaEntity lemma = addedLemmas.get(i);
             indexEntities.get(i).setLemma(lemma);
             indexEntities.get(i).setLemmaID(lemma.getId());
         }
-        INDEXES_REPOSITORY.saveAll(indexEntities);
+        indexesRepository.saveAll(indexEntities);
     }
 }
 
