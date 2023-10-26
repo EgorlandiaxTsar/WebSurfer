@@ -1,6 +1,6 @@
 # WebSurfer Search Engine
 ## Description
-WebSurfer is a search engine made on Java with Spring Boot framework. It has 3 pages: Statistics, Management and Search. The statistics page is used to monitor the engine status, the management page is used to control the indexing process and the search page is used to search through all sites or, optionally, through one selected site. The indexing algorithm is based on lemma and indexes, it extracts text from pages and transforms it in lemmas, which, technically, are just normal word forms, then with lemmas and pages the algorithm creates indexes, which are the connections between pages and lemmas. The search algorithm uses these lemmas and indexes to find the most relevant results. WebSurfer is well optimized and uses multithreading to maximize the productivity. **NOTE**: this search engine works only with cyrillic letters. 
+WebSurfer is a search engine made on Java with Spring Boot framework. It has 3 pages: Statistics, Management and Search. The statistics page is used to monitor the engine status, the management page is used to control the indexing process, and the search page is used to search through all sites or, optionally, through one selected site. The indexing algorithm is based on lemma and indexes, it extracts text from pages and transforms it in lemmas, which, technically, are just normal word forms, then with lemmas and pages the algorithm creates indexes, which are the connections between pages and lemmas. The search algorithm uses these lemmas and indexes to find the most relevant results. WebSurfer is well optimized and uses multithreading to maximize the productivity. **NOTE**: this search engine works only with cyrillic letters. 
 ## Technologies
 The following technologies were used in this project:
 - Java (**v11.0.7**)
@@ -43,9 +43,51 @@ The search page is used to search across the sites
 
 ![search-snippet](https://github.com/EgorlandiaxTsar/WebSurferSnippetsStorage/blob/master/static/search-snippet.png?raw=true "Search snippet")
 
-You can also choose a specific site and the search will be executed only on that site
+You can also choose a specific site, and the search will be executed only on that site
 
 ![search-by-site-example](https://github.com/EgorlandiaxTsar/WebSurferSnippetsStorage/blob/master/static/search-by-site-example.gif?raw=true "Search by site example")
+### Adding or removing sites from indexing list
+Unfortunately, the project does not provide interface functionality of adding and removing sites from indexing list, however, it can be done with server configuration file:
+- Open server directory and go to `target/application.yaml` file
+- In the yaml file there is a property `engine.sites`, this is the indexing list
+- Each site has the following structure:
+```yaml
+- url: https://www.skillbox.ru
+  name: Skillbox
+  request-timeout: 500
+```
+- The `url` property has the root page of the site
+- The `name` property has the name of the site, it does not influence the indexing process, just how the site will appear on the dashboard
+- The `request-timeout` property contains the timeout before the next request to the site in milliseconds, the safe value is `500`, it is not recommended to go under `200`
+- Each site is separated by dash (`-`), so you can have multiple sites like this:
+```yaml
+- url: https://www.svetlovka.ru
+  name: Светловка
+  request-timeout: 500
+- url: https://www.skillbox.ru
+  name: Skillbox
+  request-timeout: 500
+- url: https://ipfran.ru
+  name: Институт прикладной физики
+  request-timeout: 500
+```
+- **NOTE**: The tabulations are very important, the required amount of tabulations in the site block is `2` (`8` spaces)
+- The complete site list example will look like this:
+```yaml
+engine:
+  sites:
+    - url: https://www.svetlovka.ru
+      name: Светловка
+      request-timeout: 500
+    - url: https://www.skillbox.ru
+      name: Skillbox
+      request-timeout: 500
+    - url: https://ipfran.ru
+      name: Институт прикладной физики
+      request-timeout: 500
+# Other server configuration properties
+```
+- **NOTE2**: The engine does not support english sites, only cyrillic
 ## Installation guide
 In this section you can find a step-by-step guide to how to install WebSurfer locally
 ### Java installation
