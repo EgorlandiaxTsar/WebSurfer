@@ -13,6 +13,8 @@ The following technologies were used in this project:
 - Lucene Morphology
 - Jsoup
 - Log4j2
+## Video Tutorial (in Russian)
+There is a video tutorial on YouTube where you can find installation and use guides, here is the [link](https://www.youtube.com/watch?v=NTZSqLyToUA)
 ## Use guide
 ### Dashboard
 The dashboard is used to track statistics, engine status, errors and other general information.
